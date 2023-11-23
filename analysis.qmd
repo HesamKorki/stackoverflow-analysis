@@ -76,7 +76,8 @@ data |>
   ) +
   lims(x = c(0, 40000)) +
   theme_minimal() +
-  adjust_spacing
+  adjust_spacing + 
+  scale_x_continuous(labels = scales::comma)
   
 ```
 
@@ -103,16 +104,45 @@ employment_df |>
   labs(x = NULL, y = NULL, title = "Employment status of respondants") +
   lims(x = c(0, 70000)) +
   theme_minimal() +
-  adjust_spacing
+  adjust_spacing + 
+  scale_x_continuous(labels = scales::comma)
 ```
 ```{r}
-data |> 
+
+continent_data <- data |>
+  mutate(Continent = countrycode(
+    sourcevar = Country,
+    origin = "country.name",
+    destination = "continent"
+  )) |>
+  drop_na(Continent) |> 
+  group_by(Continent, Country) |> 
+  summarise(freq= n()) |> 
   mutate(
-    Continent = countrycode(sourcevar = Country,origin = "country.name",destination = "continent")
-  ) -> data
+    Country = case_when(
+      Country == "United States of America" ~ "USA",
+      Country == "United Kingdom of Great Britain and Northern Ireland" ~ "UK",
+      TRUE ~ Country
+    )
+  )
 
+continent_data |>
+  ggplot() +
+  aes(y = Continent,
+      x = freq,
+      fill = fct_lump(Country, n=10, w=freq)) +
+  geom_col() +
+  labs(title = "Diversity of Respondants", x = NULL, y = NULL, fill=NULL) +
+  theme_minimal()+ 
+  scale_fill_brewer(palette = "Set3") +
+  adjust_spacing +
+  scale_x_continuous(labels = scales::comma)
 
-
+```
+```{r}
+continent_data |> 
+  arrange(desc(freq))
+  
 ```
 
 
