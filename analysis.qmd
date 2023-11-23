@@ -69,15 +69,14 @@ data |>
   labs(x = NULL, y = NULL, title = "How old are the participants?") +
   annotate(
     "label",
-    x = 32000, y = 1.5,
+    x = 40000, y = 1.5,
     label = paste("Total Number of Participents:", scales::comma(nrow(data))),
     color = "black",
     size=3
   ) +
-  lims(x = c(0, 40000)) +
   theme_minimal() +
-  adjust_spacing + 
-  scale_x_continuous(labels = scales::comma)
+  scale_x_continuous(labels = scales::comma, limits = c(0, 50000)) +
+  adjust_spacing 
   
 ```
 
