@@ -6,6 +6,4 @@
 *.csv
 *.tsv
 
-analysis_files
-
 *.html
