@@ -1,0 +1,150 @@
+---
+title: "StackOverFlow 2023 Analysis"
+author: "Hesam Korki"
+date: "22 Nov. 2023"
+output: html_document
+---
+
+> There is a renv.lock file provided in the repo, we'd install the required packages and then laod the library
+
+```{r}
+library("tidyverse")
+library("eurostat")
+library("countrycode")
+```
+# Loading Data
+
+```{r}
+data <- read_csv("data/survey_results_public.csv", show_col_types = FALSE)
+eu_wage <- read_tsv("data/earn_mw_cur_tabular.tsv", show_col_types=FALSE)
+```
+
+## Configuring Plotting
+
+```{r}
+# defining a theme for adjusting spacings of graphs
+adjust_spacing <-
+  theme(
+    plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+    plot.margin = margin(t=20, r=50, b=20, l=20, unit = "pt")
+  )
+
+primary_color <- "#429696"
+```
+
+
+# Exploration
+
+:::{.callout-note appearance="minimal"}
+There are $89,184$ rows and $84$ columns
+
+- Each row represents the answers of a participant
+- Each column corresponds to a question of the survey 
+:::
+
+```{r}
+glimpse(data)
+```
+
+:::{.callout-warning appearance="minimal"}
+Most columns have values as a single string which contains semicolon separated values which is not as tidy as we would want.
+:::
+
+
+What interesting insights do you get by looking at this graph?
+
+
+```{r}
+data |>
+  ggplot() +
+  aes(y = fct_rev(fct_infreq(Age))) +
+  geom_bar(fill = primary_color, alpha = 0.8) +
+  geom_text(
+    aes(label = scales::percent(after_stat(count)/sum(count))),
+    stat = "count",
+    hjust = -0.2,
+    size = 3,
+    color = "black"
+  ) +
+  labs(x = NULL, y = NULL, title = "How old are the participants?") +
+  annotate(
+    "label",
+    x = 32000, y = 1.5,
+    label = paste("Total Number of Participents:", scales::comma(nrow(data))),
+    color = "black",
+    size=3
+  ) +
+  lims(x = c(0, 40000)) +
+  theme_minimal() +
+  adjust_spacing
+  
+```
+
+```{r}
+
+employment_df <- data |> 
+  select(ResponseId, Employment) |> 
+  separate_rows(Employment, sep=";") |> 
+  mutate(Employment=trimws(Employment)) |> 
+  drop_na(Employment)
+
+
+employment_df |>
+  ggplot() +
+  aes(y = fct_rev(fct_infreq(Employment))) +
+  geom_bar(fill = primary_color, alpha = 0.8) +
+  geom_text(
+    aes(label = scales::percent(after_stat(count)/sum(count))),
+    stat = "count",
+    hjust = -0.2,
+    size = 3,
+    color = "black"
+  ) +
+  labs(x = NULL, y = NULL, title = "Employment status of respondants") +
+  lims(x = c(0, 70000)) +
+  theme_minimal() +
+  adjust_spacing
+```
+```{r}
+data |> 
+  mutate(
+    Continent = countrycode(sourcevar = Country,origin = "country.name",destination = "continent")
+  ) -> data
+
+
+
+```
+
+
+
+
+
+```{r}
+eu <- data |> 
+  filter(Country %in% eu_countries$name)
+
+
+eu |>
+  ggplot() +
+  aes(y = fct_rev(fct_infreq(Country))) +
+  geom_bar(fill = primary_color, alpha = 0.8) +
+  geom_text(
+    aes(label = scales::percent(after_stat(count)/sum(count))),
+    stat = "count",
+    hjust = -0.2,
+    size = 3,
+    color = "black"
+  ) +
+  labs(x = NULL, y = NULL, title = "How old are the participants?") +
+  annotate(
+    "label",
+    x = 8000, y = 3,
+    label = paste("Total Number of Participents:", scales::comma(nrow(eu))),
+    color = "black",
+    size=3
+  ) +
+  lims(x=c(0,10000))+
+  theme_minimal() +
+  adjust_spacing
+```
+
