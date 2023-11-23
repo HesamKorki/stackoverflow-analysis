@@ -7,3 +7,5 @@
 *.tsv
 
 analysis_files
+
+*.html
