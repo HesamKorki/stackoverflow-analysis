@@ -11,6 +11,7 @@ output: html_document
 library("tidyverse")
 library("eurostat")
 library("countrycode")
+library("RColorBrewer")
 ```
 # Loading Data
 
@@ -29,7 +30,8 @@ adjust_spacing <-
     plot.margin = margin(t=20, r=50, b=20, l=20, unit = "pt")
   )
 
-primary_color <- "#429696"
+primary_color <- "#BDBAD7"
+secondary_color <- "#D2EAC9"
 ```
 
 
@@ -55,9 +57,20 @@ What interesting insights do you get by looking at this graph?
 
 
 ```{r}
+
+level_order = c(
+                "Prefer not to say",
+                "65 years or older",
+                "55-64 years old",
+                "45-54 years old",
+                "35-44 years old",
+                "25-34 years old",
+                "18-24 years old",
+                "Under 18 years old"
+                )
 data |>
   ggplot() +
-  aes(y = fct_rev(fct_infreq(Age))) +
+  aes(y = factor(Age, levels = level_order)) +
   geom_bar(fill = primary_color, alpha = 0.8) +
   geom_text(
     aes(label = scales::percent(after_stat(count)/sum(count))),
@@ -101,10 +114,9 @@ employment_df |>
     color = "black"
   ) +
   labs(x = NULL, y = NULL, title = "Employment status of respondants") +
-  lims(x = c(0, 70000)) +
   theme_minimal() +
   adjust_spacing + 
-  scale_x_continuous(labels = scales::comma)
+  scale_x_continuous(labels = scales::comma, limits = c(0, 70000))
 ```
 ```{r}
 
@@ -125,6 +137,9 @@ continent_data <- data |>
     )
   )
 
+custom_brewer <-  brewer.pal(11, "Set3")
+custom_brewer[c(9,11)] <- custom_brewer[c(11,9)]
+
 continent_data |>
   ggplot() +
   aes(y = Continent,
@@ -132,10 +147,10 @@ continent_data |>
       fill = fct_lump(Country, n=10, w=freq)) +
   geom_col() +
   labs(title = "Diversity of Respondants", x = NULL, y = NULL, fill=NULL) +
+  scale_x_continuous(labels = scales::comma) +
   theme_minimal()+ 
-  scale_fill_brewer(palette = "Set3") +
-  adjust_spacing +
-  scale_x_continuous(labels = scales::comma)
+  scale_fill_manual(values= custom_brewer)
+  adjust_spacing
 
 ```
 ```{r}
@@ -150,30 +165,46 @@ continent_data |>
 
 ```{r}
 eu <- data |> 
-  filter(Country %in% eu_countries$name)
+  filter(Currency == "EUR European Euro") |> 
+  drop_na(CompTotal)# |> 
+  # filter(CompTotal<500000)
 
 
 eu |>
   ggplot() +
-  aes(y = fct_rev(fct_infreq(Country))) +
-  geom_bar(fill = primary_color, alpha = 0.8) +
-  geom_text(
-    aes(label = scales::percent(after_stat(count)/sum(count))),
-    stat = "count",
-    hjust = -0.2,
-    size = 3,
-    color = "black"
-  ) +
-  labs(x = NULL, y = NULL, title = "How old are the participants?") +
+  geom_histogram(aes(CompTotal), bins=120) +
+  geom_vline(aes(xintercept = median(CompTotal)), color = primary_color, linetype = "dashed", size = 1) +
+  geom_vline(aes(xintercept = mean(CompTotal)), color = secondary_color, linetype = "dashed", size = 1) +
   annotate(
     "label",
-    x = 8000, y = 3,
-    label = paste("Total Number of Participents:", scales::comma(nrow(eu))),
-    color = "black",
+    x = 10, y = 1500,
+    label = paste("medain:", scales::comma(median(eu$CompTotal), suffix = " \u20AC")),
+    color = primary_color,
+    fill = "black",
     size=3
   ) +
-  lims(x=c(0,10000))+
-  theme_minimal() +
+  annotate(
+    "label",
+    x = 10, y = 1600,
+    label = paste("medain:", scales::comma(mean(eu$CompTotal), suffix = " \u20AC")),
+    color = secondary_color,
+    fill = "black",
+    size=3
+  ) +
+  scale_x_log10(labels = scales::label_comma(suffix = " \u20AC")) +
+  labs(x=NULL, y=NULL, title="Distribution of Gross Annual Income")
+  
+  
+  
+```
+
+```{r}
+eu |> 
+  ggplot() +
+  aes(x=fct_lump(Country, n=8), y=CompTotal) +
+  geom_boxplot() + 
+  scale_y_log10() + 
+  labs(x=NULL, y=NULL, title="Gross Salary Distribution by Country") +
   adjust_spacing
 ```
 
