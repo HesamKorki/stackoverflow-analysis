@@ -12,6 +12,7 @@ library("tidyverse")
 library("eurostat")
 library("countrycode")
 library("RColorBrewer")
+library("ggbeeswarm")
 ```
 # Loading Data
 
@@ -96,9 +97,9 @@ data |>
 ```{r}
 
 employment_df <- data |> 
-  select(ResponseId, Employment) |> 
+  select(ResponseId, Employment, Currency, CompTotal, EdLevel, Age) |> 
   separate_rows(Employment, sep=";") |> 
-  mutate(Employment=trimws(Employment)) |> 
+  mutate(Employment=trimws(Employment)) |>
   drop_na(Employment)
 
 
@@ -149,10 +150,12 @@ continent_data |>
   labs(title = "Diversity of Respondants", x = NULL, y = NULL, fill=NULL) +
   scale_x_continuous(labels = scales::comma) +
   theme_minimal()+ 
-  scale_fill_manual(values= custom_brewer)
+  scale_fill_manual(values= custom_brewer) +
   adjust_spacing
 
 ```
+
+
 ```{r}
 continent_data |> 
   arrange(desc(freq))
@@ -171,14 +174,14 @@ eu <- data |>
 
 
 eu |>
-  ggplot() +
-  geom_histogram(aes(CompTotal), bins=120) +
+  ggplot(aes(x=CompTotal)) +
+  geom_histogram(bins=120) +
   geom_vline(aes(xintercept = median(CompTotal)), color = primary_color, linetype = "dashed", size = 1) +
   geom_vline(aes(xintercept = mean(CompTotal)), color = secondary_color, linetype = "dashed", size = 1) +
   annotate(
     "label",
     x = 10, y = 1500,
-    label = paste("medain:", scales::comma(median(eu$CompTotal), suffix = " \u20AC")),
+    label = paste("Medain:", scales::comma(median(eu$CompTotal), suffix = " \u20AC")),
     color = primary_color,
     fill = "black",
     size=3
@@ -186,13 +189,14 @@ eu |>
   annotate(
     "label",
     x = 10, y = 1600,
-    label = paste("medain:", scales::comma(mean(eu$CompTotal), suffix = " \u20AC")),
+    label = paste("Mean:", scales::comma(mean(eu$CompTotal), suffix = " \u20AC")),
     color = secondary_color,
     fill = "black",
-    size=3
+    size=3.3
   ) +
   scale_x_log10(labels = scales::label_comma(suffix = " \u20AC")) +
-  labs(x=NULL, y=NULL, title="Distribution of Gross Annual Income")
+  labs(x=NULL, y=NULL, title="Distribution of Gross Annual Income") +
+  adjust_spacing
   
   
   
@@ -201,10 +205,34 @@ eu |>
 ```{r}
 eu |> 
   ggplot() +
-  aes(x=fct_lump(Country, n=8), y=CompTotal) +
-  geom_boxplot() + 
-  scale_y_log10() + 
-  labs(x=NULL, y=NULL, title="Gross Salary Distribution by Country") +
+  aes(x=fct_lump(Country, n=10, w=CompTotal), y=CompTotal) +
+  geom_quasirandom(dodge.width = 1, size=0.1, bandwidth=0.8, color=custom_brewer[5]) + 
+  scale_y_log10(labels = scales::label_comma(suffix = " \u20AC")) + 
+  labs(x=NULL, y=NULL, title="EU Gross Salary Distribution by Country") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  adjust_spacing
+```
+```{r}
+eu_employment <- 
+  employment_df |> 
+    filter(Currency == "EUR European Euro") |> 
+    drop_na(CompTotal) |> 
+    drop_na(EdLevel)
+
+stat_emp <- eu_employment |> summarise(mean_emp=mean(CompTotal), .by=Employment)
+  
+eu_employment |> 
+  ggplot(aes(x=Employment, y=CompTotal)) +
+  geom_quasirandom(dodge.width = 1, size=0.1, bandwidth=0.8, color=custom_brewer[5]) +
+  geom_segment(data=stat_emp, aes(x = as.numeric(factor(Employment)) - 0.3, 
+                   xend = as.numeric(factor(Employment)) + 0.3,
+                   y = mean_emp, 
+                   yend = mean_emp),
+               color = "red", linetype = "dashed", size = 0.4) +
+  scale_y_log10(labels = scales::label_comma(suffix = " \u20AC")) + 
+  labs(x=NULL, y=NULL, title="EU Gross Salary Distribution by Employment Status") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   adjust_spacing
 ```
 
+## Does more experience shows more salary?
