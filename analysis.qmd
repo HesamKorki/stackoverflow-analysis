@@ -4,8 +4,6 @@ author: "Hesam Korki"
 date: "Dec. 2023"
 format:
   html:
-    output-file: "index"
-    output-ext: "html"
     toc: true
     toc-location: left
     theme: journal
@@ -13,6 +11,7 @@ format:
     df-print: paged
     smooth-scroll: true
     link-external-icon: true
+    embed-resources: true
 ---
 
 > There is a renv.lock file provided in the repo, we'd install the required packages and then laod the library
