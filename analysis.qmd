@@ -212,6 +212,9 @@ eu |>
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   adjust_spacing
 ```
+Change the x axis labels
+
+
 ```{r}
 eu_employment <- 
   employment_df |> 
