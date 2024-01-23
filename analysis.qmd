@@ -30,9 +30,8 @@ eu_wage <- read_csv(
   "data/estat_earn_ses_annual_filtered_en.csv",
   col_select = c("Geopolitical entity (reporting)", "TIME_PERIOD", "OBS_VALUE"),
   show_col_types = FALSE
-) |> 
-  rename(Country="Geopolitical entity (reporting)")
-
+) |>
+  rename(Country = "Geopolitical entity (reporting)")
 ```
 
 
@@ -46,7 +45,8 @@ adjust_spacing <-
       size = 12,
       margin = margin(t = 20),
       hjust = 0.5
-    )
+    ),
+    axis.text.x = element_text(margin = margin(t = 10))
   )
 
 primary_color <- "#F48024"
@@ -79,7 +79,8 @@ data |>
     aes(label = scales::percent(after_stat(count) / sum(count))),
     stat = "count",
     hjust = -0.2,
-    size = 3,
+    size = 4,
+    fontface = 2,
     color = "black"
   ) +
   labs(x = NULL, y = NULL, caption = "Fig 1: Binned histogram of participant age") +
@@ -172,7 +173,8 @@ data |>
     aes(label = scales::percent(after_stat(count) / sum(count))),
     stat = "count",
     hjust = -0.2,
-    size = 3,
+    size = 4,
+    fontface = 2,
     color = "black"
   ) +
   labs(x = NULL, y = NULL, caption = "Fig 3: Education level of participants") +
@@ -208,7 +210,8 @@ employment_df |>
     aes(label = scales::percent(after_stat(count) / sum(count))),
     stat = "count",
     hjust = -0.2,
-    size = 3,
+    size = 4,
+    fontface = 2,
     color = "black"
   ) +
   labs(x = NULL, y = NULL, caption = "Fig 4: Employment status of the participents") +
@@ -267,8 +270,8 @@ eu |>
     "segment",
     x = median(eu$CompTotal),
     xend = median(eu$CompTotal),
-    y=0,
-    yend=1500,
+    y = 0,
+    yend = 1500,
     color = primary_color,
     linetype = "dashed",
     size = 1
@@ -277,8 +280,8 @@ eu |>
     "segment",
     x = mean(eu$CompTotal),
     xend = mean(eu$CompTotal),
-    y=0,
-    yend=1500,
+    y = 0,
+    yend = 1500,
     color = secondary_color,
     linetype = "dashed",
     size = 1
@@ -290,7 +293,7 @@ eu |>
     xend = mean(eu_wage$OBS_VALUE),
     y = 0,
     yend = 1300,
-    color = "skyblue",
+    color = "#2E7AB7",
     linetype = "dashed",
     size = 1
   ) +
@@ -299,7 +302,7 @@ eu |>
     x = 12500,
     y = 1350,
     label = paste("eurostat Mean:", scales::comma(mean(eu_wage$OBS_VALUE), suffix = " \u20AC")),
-    color = "skyblue",
+    color = "#2E7AB7",
     size = 4,
     fontface = 2
   ) +
@@ -327,6 +330,48 @@ eu |>
   adjust_spacing
 ```
 
+### By Employment Status
+
+```{r}
+eu_employment <-
+  employment_df |>
+  filter(Currency == "EUR European Euro") |>
+  drop_na(CompTotal) |>
+  filter(between(CompTotal, 500, 500000))
+
+stat_emp <-
+  eu_employment |> summarise(mean_emp = mean(CompTotal), .by = Employment)
+
+eu_employment |>
+  ggplot(aes(x = CompTotal, y = Employment)) +
+  geom_quasirandom(
+    dodge.width = 1,
+    size = 0.1,
+    bandwidth = 0.8,
+    color = primary_color
+  ) +
+  geom_segment(
+    data = stat_emp,
+    aes(
+      color = "black",
+      y = as.numeric(factor(Employment)) - 0.4,
+      yend = as.numeric(factor(Employment)) + 0.4,
+      x = mean_emp,
+      xend = mean_emp
+    ),
+    size = 1
+  ) +
+  scale_x_log10(labels = scales::label_comma(suffix = " \u20AC")) +
+  scale_colour_manual(
+    name = 'Mean Value',
+    values = c('black' = 'black'),
+    labels = c('Stack Overflow')
+  ) +
+  labs(x = NULL, y = NULL, caption = "Fig 6: EU Gross Salary Distribution by Employment Status") +
+  theme_minimal() +
+  adjust_spacing
+```
+
 ### By Country
 
 ```{r}
@@ -347,7 +392,7 @@ stat_country <- eu |>
   mutate(Country = case_when(Country %in% countries_eu ~ Country,
                              TRUE ~ "Other"))
 
-stat_eurostat <- eu_wage |> 
+stat_eurostat <- eu_wage |>
   mutate(Country = case_when(Country %in% countries_eu ~ Country,
                              TRUE ~ "Other"))
 
@@ -379,68 +424,63 @@ stat_country |>
       xend = mean_comp,
       y = as.numeric(factor(Country)) - 0.5,
       yend = as.numeric(factor(Country)) + 0.4,
-      color = "skyblue"
+      color = "#2E7AB7"
     ),
     size = 1
   ) +
   scale_x_log10(labels = scales::label_comma(suffix = " \u20AC")) +
-  scale_colour_manual(name = 'Average Salary', 
-         values =c('black'='black','skyblue'='skyblue'), labels = c('Stack Overflow','eurostat')) +
-  labs(x = NULL, y = NULL, caption = "Fig 6: Annual gross salary by selected EU countries along with their average annual salary from eurostat") +
+  scale_colour_manual(
+    name = 'Average Salary',
+    values = c('black' = 'black', '#2E7AB7' = '#2E7AB7'),
+    labels = c('Stack Overflow', 'eurostat')
+  ) +
+  labs(x = NULL, y = NULL, caption = "Fig 7: Annual gross salary by selected EU countries along with their average annual salary from eurostat") +
   theme_minimal() +
   adjust_spacing
 ```
-
-### By Employment Status
+### Pay Gap
 
 ```{r}
-eu_employment <-
-  employment_df |>
-  filter(Currency == "EUR European Euro") |>
-  drop_na(CompTotal)
+eustat_pay_avg <- stat_eurostat |>
+  summarise(mean_comp = mean(OBS_VALUE), .by = Country)
 
-stat_emp <-
-  eu_employment |> summarise(mean_emp = mean(CompTotal), .by = Employment)
+wage_gap <- stat_country |>
+  summarise(mean_comp = mean(CompTotal), .by = Country) |>
+  left_join(eustat_pay_avg,
+            by = "Country",
+            suffix = c("_so", "_eu"))
 
-eu_employment |>
-  ggplot(aes(x = Employment, y = CompTotal)) +
-  geom_quasirandom(
-    dodge.width = 1,
-    size = 0.1,
-    bandwidth = 0.8,
-    color = custom_brewer[5]
+wage_gap |>
+  ggplot() +
+  aes(y = Country, x = (mean_comp_so - mean_comp_eu)) +
+  geom_col(fill = primary_color, alpha = 0.8) +
+  labs(x = NULL, y = NULL, caption = "Fig 8: Pay gap between developers and other industries") +
+  geom_text(
+    aes(label = scales::comma(mean_comp_so - mean_comp_eu)),
+    hjust = -0.2,
+    size = 4,
+    fontface = 2,
+    color = "black"
   ) +
-  geom_segment(
-    data = stat_emp,
-    aes(
-      x = as.numeric(factor(Employment)) - 0.3,
-      xend = as.numeric(factor(Employment)) + 0.3,
-      y = mean_emp,
-      yend = mean_emp
-    ),
-    color = "red",
-    linetype = "dashed",
-    size = 0.4
-  ) +
-  scale_y_log10(labels = scales::label_comma(suffix = " \u20AC")) +
-  labs(x = NULL, y = NULL, title = "EU Gross Salary Distribution by Employment Status") +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
-  adjust_spacing
+  scale_x_continuous(labels = scales::comma, limits = c(0, 100000)) +
+  theme_minimal() +
+  adjust_spacing 
 ```
+
+
 ### Table 
 
 ```{r}
 #| label: tbl-comp
-#| tbl-cap: "Average salary of participants from selected EU countries"
-show_comp_table <- stat_country |>
-  summarise(mean_comp = mean(CompTotal), .by = Country) |>
-  arrange(desc(mean_comp)) |>
-  mutate(mean_comp = scales::comma(mean_comp, suffix = " \u20AC")) |>
-  rename("Mean Compensation" = mean_comp)
+#| tbl-cap: "Pay gap between developers and other employees in selected EU countries"
+show_comp_table <- wage_gap |>
+  mutate(gap = (mean_comp_so - mean_comp_eu)) |>
+  arrange(desc(gap)) |>
+  mutate(across(where(is.numeric), ~ scales::comma(., suffix = " \u20AC"))) |>
+  rename("SO Mean Salary" = mean_comp_so) |>
+  rename("eruostat Mean Salary" = mean_comp_eu)
 
 kable(show_comp_table)
 ```
 
 :::
-
-## Does more experience shows more salary?
