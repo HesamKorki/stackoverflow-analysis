@@ -20,7 +20,6 @@ library("ggbeeswarm")
 
 ```{r}
 data <- read_csv("data/survey_results_public.csv", show_col_types = FALSE)
-eu_wage <- read_tsv("data/earn_mw_cur_tabular.tsv", show_col_types=FALSE)
 ```
 
 ## Configuring Plotting

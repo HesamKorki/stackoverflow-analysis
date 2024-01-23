@@ -4,28 +4,14 @@ author: "Hesam Korki"
 institute: "University of Luxembourg"
 format:
   revealjs:
+    css: "docs/style.css"
     slide-level: 4
     slide-number: true
     logo: https://stackoverflow.design/assets/img/logos/so/logo-stackoverflow.png
     embed-resources: true
+    tbl-cap-location: bottom
 ---
 
-
-
-## Formatting HTML
-
-title: "StackOverFlow 2023 Analysis"
-author: "Hesam Korki"
-date: "Dec. 2023"
-format:
-  html:
-    toc: true
-    toc-location: left
-    theme: journal
-    code-fold: true
-    df-print: paged
-    smooth-scroll: true
-    link-external-icon: true
 
 ```{r}
 library("tidyverse")
@@ -33,57 +19,38 @@ library("eurostat")
 library("countrycode")
 library("RColorBrewer")
 library("ggbeeswarm")
+library("knitr")
 ```
 
 ```{r}
-data <- read_csv("data/survey_results_public.csv", show_col_types = FALSE)
-eu_wage <- read_tsv("data/earn_mw_cur_tabular.tsv", show_col_types=FALSE)
+data <-
+  read_csv("data/survey_results_public.csv", show_col_types = FALSE)
+
+eu_wage <- read_csv(
+  "data/estat_earn_ses_annual_filtered_en.csv",
+  col_select = c("Geopolitical entity (reporting)", "TIME_PERIOD", "OBS_VALUE"),
+  show_col_types = FALSE
+) |> 
+  rename(Country="Geopolitical entity (reporting)")
+
 ```
 
 
 ```{r}
-# defining a theme for adjusting spacings of graphs
+# defining a custom theme for graphs
 adjust_spacing <-
   theme(
-    # plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
-    # plot.margin = margin(t=20, r=50, b=20, l=20, unit = "pt")
-    axis.text = element_text(face = "bold", size=12)
+    axis.text = element_text(face = "bold", size = 12),
+    plot.caption = element_text(
+      face = "italic",
+      size = 12,
+      margin = margin(t = 20),
+      hjust = 0.5
+    )
   )
 
 primary_color <- "#F48024"
-primary_color2 <- "#BDBAD7"
-secondary_color <- "#D2EAC9"
-```
-
-```{css, echo=FALSE}
-.panel-tabset ul {
-  border-bottom: 0px;
-}
-.panel-tabset-tabby a {
-  color: #BBC0C4;
-  font-size: 0.6em;
-  border-bottom: none !important;
-  
-}
-
-.panel-tabset [role=tab][aria-selected=true] {
-  background-color: transparent;
-  border: 0px;
-}
-
-.panel-tabset-tabby a[aria-selected="true"],
-.panel-tabset-tabby a:hover {
-  color: #F48024;
-  border: 0px !important;
-}
-
-h3 {
-  margin-top: 0;
-}
-
-.list-desc {
-  font-size: 0.5em;
-}
+secondary_color <- "#BBC0C4"
 ```
 
 
@@ -94,43 +61,37 @@ h3 {
 ### Age
 
 ```{r}
-
 level_order = c(
-                "Prefer not to say",
-                "65 years or older",
-                "55-64 years old",
-                "45-54 years old",
-                "35-44 years old",
-                "25-34 years old",
-                "18-24 years old",
-                "Under 18 years old"
-                )
+  "Prefer not to say",
+  "65 years or older",
+  "55-64 years old",
+  "45-54 years old",
+  "35-44 years old",
+  "25-34 years old",
+  "18-24 years old",
+  "Under 18 years old"
+)
 data |>
   ggplot() +
   aes(y = factor(Age, levels = level_order)) +
-  geom_bar(fill = primary_color, alpha=0.8) +
+  geom_bar(fill = primary_color, alpha = 0.8) +
   geom_text(
-    aes(label = scales::percent(after_stat(count)/sum(count))),
+    aes(label = scales::percent(after_stat(count) / sum(count))),
     stat = "count",
     hjust = -0.2,
     size = 3,
     color = "black"
   ) +
-  labs(x = NULL, y = NULL) +
+  labs(x = NULL, y = NULL, caption = "Fig 1: Binned histogram of participant age") +
   theme_minimal() +
   scale_x_continuous(labels = scales::comma, limits = c(0, 50000)) +
-  adjust_spacing 
-  
+  adjust_spacing
 ```
 
 ### Origin
 
-::: {.list-desc}
-- Top 10 countries with most participants
-:::
 
 ```{r}
-
 continent_data <- data |>
   mutate(Continent = countrycode(
     sourcevar = Country,
@@ -140,7 +101,7 @@ continent_data <- data |>
   drop_na(Continent) |>
   group_by(Continent, Country) |>
   summarise(freq = n()) |>
-  ungroup() |> 
+  ungroup() |>
   mutate(
     Country = case_when(
       Country == "United States of America" ~ "USA",
@@ -149,9 +110,9 @@ continent_data <- data |>
     )
   )
 
-continent_freq <- continent_data |> 
-  group_by(Continent) |> 
-  summarise(freq_c=sum(freq))
+continent_freq <- continent_data |>
+  group_by(Continent) |>
+  summarise(freq_c = sum(freq))
 
 custom_brewer <-  brewer.pal(11, "Set3")
 custom_brewer[c(9, 11)] <- custom_brewer[c(11, 9)]
@@ -166,52 +127,55 @@ continent_data |>
   position = "dodge") +
   geom_col(
     data = continent_freq,
-    mapping = aes(
-      y = Continent,
-      x = freq_c),
+    mapping = aes(y = Continent,
+                  x = freq_c),
     alpha = 0,
     color = primary_color
   ) +
-  labs(x = NULL, y = NULL, fill = NULL) +
+  labs(
+    x = NULL,
+    y = NULL,
+    fill = NULL,
+    caption = "Fig 2: Top 10 countries [along respected continent] where most participants come from"
+  ) +
   scale_x_continuous(labels = scales::comma) +
   theme_minimal() +
   scale_fill_manual(values = custom_brewer) +
   adjust_spacing
-
 ```
 ### Education
 
 ```{r}
 education_levels = c(
-                "Something else",
-                "Professional degree",
-                "Master’s degree",
-                "Bachelor’s degree",
-                "Associate degree",
-                "Dropped college/university",
-                "Secondary school",
-                "Primary/elementary school"
-                )
+  "Something else",
+  "Professional degree",
+  "Master’s degree",
+  "Bachelor’s degree",
+  "Associate degree",
+  "Dropped college/university",
+  "Secondary school",
+  "Primary/elementary school"
+)
 
 data |>
   mutate(
     Education = case_when(
-       EdLevel == "Some college/university study without earning a degree" ~ "Dropped college/university",
-       is.na(EdLevel) ~ "Something else",
-       TRUE ~ str_replace(EdLevel, " \\(.+\\)", "")
+      EdLevel == "Some college/university study without earning a degree" ~ "Dropped college/university",
+      is.na(EdLevel) ~ "Something else",
+      TRUE ~ str_replace(EdLevel, " \\(.+\\)", "")
     )
-  ) |> 
+  ) |>
   ggplot() +
   aes(y = factor(Education, levels = education_levels)) +
   geom_bar(fill = primary_color, alpha = 0.8) +
   geom_text(
-    aes(label = scales::percent(after_stat(count)/sum(count))),
+    aes(label = scales::percent(after_stat(count) / sum(count))),
     stat = "count",
     hjust = -0.2,
     size = 3,
     color = "black"
   ) +
-  labs(x = NULL, y = NULL) +
+  labs(x = NULL, y = NULL, caption = "Fig 3: Education level of participants") +
   theme_minimal() +
   scale_x_continuous(labels = scales::comma, limits = c(0, 50000)) +
   adjust_spacing 
@@ -221,12 +185,11 @@ data |>
 ### Employment Status
 
 ```{r}
-
-employment_df <- data |> 
-  select(ResponseId, Employment, Currency, CompTotal, EdLevel, Age) |> 
-  separate_rows(Employment, sep=";") |> 
-  mutate(Employment=trimws(Employment)) |>
-  drop_na(Employment) |> 
+employment_df <- data |>
+  select(ResponseId, Employment, Currency, CompTotal, EdLevel, Age) |>
+  separate_rows(Employment, sep = ";") |>
+  mutate(Employment = trimws(Employment)) |>
+  drop_na(Employment) |>
   mutate(
     Employment = case_when(
       Employment == "Independent contractor, freelancer, or self-employed" ~ "Self-employed",
@@ -242,105 +205,242 @@ employment_df |>
   aes(y = fct_rev(fct_infreq(Employment))) +
   geom_bar(fill = primary_color, alpha = 0.8) +
   geom_text(
-    aes(label = scales::percent(after_stat(count)/sum(count))),
+    aes(label = scales::percent(after_stat(count) / sum(count))),
     stat = "count",
     hjust = -0.2,
     size = 3,
     color = "black"
   ) +
-  labs(x = NULL, y = NULL) +
+  labs(x = NULL, y = NULL, caption = "Fig 4: Employment status of the participents") +
   theme_minimal() +
-  adjust_spacing + 
+  adjust_spacing +
   scale_x_continuous(labels = scales::comma, limits = c(0, 70000))
 ```
 
 :::
 
-### LOL
+### Focus the Lens: Europe
+
+::: {.content-container}
+
+::: {.text-container .incremental}
+
+- There are `r scales::comma(filter(continent_freq, Continent=="Europe")$freq_c)` participants from Europe which is the most comparing to other continents as we saw
+
+- They institute roughly `r scales::percent(filter(continent_freq, Continent=="Europe")$freq_c/nrow(data))` of all the respondents
+
+- These individuals are generally paid in `r " \u20AC"` which makes the comparison straightforward and sensible
+
+- I'd also use the "latest" publicly available dataset of average annual income of EU countries from [eurostat](https://ec.europa.eu/eurostat/) to compare developer's income with average of all industries
+
+
+:::
+
+::: {.image-container}
+
+<img src="https://ec.europa.eu/eurostat/o/estat-theme-ecl/images/header/estat-logo-horizontal.svg?browserId=other&minifierType=js&languageId=en_GB&t=1704736858000" alt="EU Flag" class="custom-image">
+
+:::
 
 
 
-### Ethnics
+:::
+
+
+### Distribution of Gross Annual Income
+
+::: {.panel-tabset}
+
+### General
+
 
 ```{r}
-continent_data |> 
-  arrange(desc(freq))
-```
-
-
-
-
-
-```{r}
-eu <- data |> 
-  filter(Currency == "EUR European Euro") |> 
-  drop_na(CompTotal)# |> 
-  # filter(CompTotal<500000)
-
+eu <- data |>
+  filter(Currency == "EUR European Euro") |>
+  drop_na(CompTotal) |>
+  filter(between(CompTotal, 500, 500000))
 
 eu |>
-  ggplot(aes(x=CompTotal)) +
-  geom_histogram(bins=120) +
-  geom_vline(aes(xintercept = median(CompTotal)), color = primary_color, linetype = "dashed", size = 1) +
-  geom_vline(aes(xintercept = mean(CompTotal)), color = secondary_color, linetype = "dashed", size = 1) +
+  ggplot(aes(x = CompTotal)) +
+  geom_histogram(bins = 120) +
   annotate(
-    "label",
-    x = 10, y = 1500,
+    "segment",
+    x = median(eu$CompTotal),
+    xend = median(eu$CompTotal),
+    y=0,
+    yend=1500,
+    color = primary_color,
+    linetype = "dashed",
+    size = 1
+  ) +
+  annotate(
+    "segment",
+    x = mean(eu$CompTotal),
+    xend = mean(eu$CompTotal),
+    y=0,
+    yend=1500,
+    color = secondary_color,
+    linetype = "dashed",
+    size = 1
+  ) +
+  # The average EU salary (eurostat)
+  annotate(
+    "segment",
+    x = mean(eu_wage$OBS_VALUE),
+    xend = mean(eu_wage$OBS_VALUE),
+    y = 0,
+    yend = 1300,
+    color = "skyblue",
+    linetype = "dashed",
+    size = 1
+  ) +
+  annotate(
+    "text",
+    x = 12500,
+    y = 1350,
+    label = paste("eurostat Mean:", scales::comma(mean(eu_wage$OBS_VALUE), suffix = " \u20AC")),
+    color = "skyblue",
+    size = 4,
+    fontface = 2
+  ) +
+  annotate(
+    "text",
+    x = 28000,
+    y = 1530,
     label = paste("Medain:", scales::comma(median(eu$CompTotal), suffix = " \u20AC")),
     color = primary_color,
-    fill = "black",
-    size=3
+    size = 4,
+    fontface = 2
   ) +
   annotate(
-    "label",
-    x = 10, y = 1600,
+    "text",
+    x = 140000,
+    y = 1530,
     label = paste("Mean:", scales::comma(mean(eu$CompTotal), suffix = " \u20AC")),
-    color = secondary_color,
-    fill = "black",
-    size=3.3
+    color = "#454A4D",
+    size = 4,
+    fontface = 2
   ) +
   scale_x_log10(labels = scales::label_comma(suffix = " \u20AC")) +
-  labs(x=NULL, y=NULL, title="Distribution of Gross Annual Income") +
+  labs(x = NULL, y = NULL, caption = "Fig 5: Annual gross compensation recievied by the participants compared to eurostat mean across EU") +
+  theme_minimal() +
   adjust_spacing
-  
-  
-  
 ```
 
+### By Country
+
 ```{r}
-eu |> 
+countries_eu =  c(
+  "Other",
+  "Austria",
+  "Italy",
+  "Spain",
+  "Poland",
+  "Netherlands",
+  "Belgium",
+  "France",
+  "Germany",
+  "Luxembourg"
+)
+
+stat_country <- eu |>
+  mutate(Country = case_when(Country %in% countries_eu ~ Country,
+                             TRUE ~ "Other"))
+
+stat_eurostat <- eu_wage |> 
+  mutate(Country = case_when(Country %in% countries_eu ~ Country,
+                             TRUE ~ "Other"))
+
+stat_country |>
   ggplot() +
-  aes(x=fct_lump(Country, n=10, w=CompTotal), y=CompTotal) +
-  geom_quasirandom(dodge.width = 1, size=0.1, bandwidth=0.8, color=custom_brewer[5]) + 
-  scale_y_log10(labels = scales::label_comma(suffix = " \u20AC")) + 
-  labs(x=NULL, y=NULL, title="EU Gross Salary Distribution by Country") +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  aes(y = Country, x = CompTotal) +
+  geom_quasirandom(
+    dodge.width = 0,
+    size = 0.7,
+    bandwidth = 0.2,
+    color = primary_color,
+    alpha = 0.8
+  ) +
+  geom_segment(
+    data = stat_country |>  summarise(mean_comp = mean(CompTotal), .by = Country),
+    aes(
+      x = mean_comp,
+      xend = mean_comp,
+      y = as.numeric(factor(Country)) - 0.5,
+      yend = as.numeric(factor(Country)) + 0.4,
+      color = "black"
+    ),
+    size = 1
+  ) +
+  geom_segment(
+    data = stat_eurostat |>  summarise(mean_comp = mean(OBS_VALUE), .by = Country),
+    aes(
+      x = mean_comp,
+      xend = mean_comp,
+      y = as.numeric(factor(Country)) - 0.5,
+      yend = as.numeric(factor(Country)) + 0.4,
+      color = "skyblue"
+    ),
+    size = 1
+  ) +
+  scale_x_log10(labels = scales::label_comma(suffix = " \u20AC")) +
+  scale_colour_manual(name = 'Average Salary', 
+         values =c('black'='black','skyblue'='skyblue'), labels = c('Stack Overflow','eurostat')) +
+  labs(x = NULL, y = NULL, caption = "Fig 6: Annual gross salary by selected EU countries along with their average annual salary from eurostat") +
+  theme_minimal() +
   adjust_spacing
 ```
-Change the x axis labels
 
+### By Employment Status
 
 ```{r}
-eu_employment <- 
-  employment_df |> 
-    filter(Currency == "EUR European Euro") |> 
-    drop_na(CompTotal) |> 
-    drop_na(EdLevel)
+eu_employment <-
+  employment_df |>
+  filter(Currency == "EUR European Euro") |>
+  drop_na(CompTotal)
 
-stat_emp <- eu_employment |> summarise(mean_emp=mean(CompTotal), .by=Employment)
-  
-eu_employment |> 
-  ggplot(aes(x=Employment, y=CompTotal)) +
-  geom_quasirandom(dodge.width = 1, size=0.1, bandwidth=0.8, color=custom_brewer[5]) +
-  geom_segment(data=stat_emp, aes(x = as.numeric(factor(Employment)) - 0.3, 
-                   xend = as.numeric(factor(Employment)) + 0.3,
-                   y = mean_emp, 
-                   yend = mean_emp),
-               color = "red", linetype = "dashed", size = 0.4) +
-  scale_y_log10(labels = scales::label_comma(suffix = " \u20AC")) + 
-  labs(x=NULL, y=NULL, title="EU Gross Salary Distribution by Employment Status") +
+stat_emp <-
+  eu_employment |> summarise(mean_emp = mean(CompTotal), .by = Employment)
+
+eu_employment |>
+  ggplot(aes(x = Employment, y = CompTotal)) +
+  geom_quasirandom(
+    dodge.width = 1,
+    size = 0.1,
+    bandwidth = 0.8,
+    color = custom_brewer[5]
+  ) +
+  geom_segment(
+    data = stat_emp,
+    aes(
+      x = as.numeric(factor(Employment)) - 0.3,
+      xend = as.numeric(factor(Employment)) + 0.3,
+      y = mean_emp,
+      yend = mean_emp
+    ),
+    color = "red",
+    linetype = "dashed",
+    size = 0.4
+  ) +
+  scale_y_log10(labels = scales::label_comma(suffix = " \u20AC")) +
+  labs(x = NULL, y = NULL, title = "EU Gross Salary Distribution by Employment Status") +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   adjust_spacing
 ```
+### Table 
+
+```{r}
+#| label: tbl-comp
+#| tbl-cap: "Average salary of participants from selected EU countries"
+show_comp_table <- stat_country |>
+  summarise(mean_comp = mean(CompTotal), .by = Country) |>
+  arrange(desc(mean_comp)) |>
+  mutate(mean_comp = scales::comma(mean_comp, suffix = " \u20AC")) |>
+  rename("Mean Compensation" = mean_comp)
+
+kable(show_comp_table)
+```
+
+:::
 
 ## Does more experience shows more salary?

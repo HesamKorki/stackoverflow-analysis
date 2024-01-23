@@ -1,0 +1,66 @@
+.panel-tabset ul {
+  border-bottom: 0px;
+}
+.panel-tabset-tabby a {
+  color: #BBC0C4;
+  font-size: 0.6em;
+  border-bottom: none !important;
+  
+}
+
+.panel-tabset [role=tab][aria-selected=true] {
+  background-color: transparent;
+  border: 0px;
+}
+
+.panel-tabset-tabby a[aria-selected="true"],
+.panel-tabset-tabby a:hover {
+  color: #F48024;
+  border: 0px !important;
+}
+
+h3 {
+  margin-top: 0;
+}
+
+.list-desc {
+  font-size: 0.5em;
+}
+
+.content-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.image-container {
+  flex: 1;
+  max-width: 40%; 
+}
+
+.custom-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: auto;
+}
+
+.text-container {
+  flex: 1;
+  font-size: 0.5em;
+  padding-right: 40px;
+}
+
+#tbl-comp th {
+  font-size: 0.8em;
+}
+
+#tbl-comp caption {
+  font-size: 0.45em;
+  font-style: italic;
+}
+
+#tbl-comp td {
+  font-size: 0.6em;
+  text-align: center !important;
+}
