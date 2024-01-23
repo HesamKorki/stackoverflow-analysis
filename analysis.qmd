@@ -1,6 +1,21 @@
 ---
 title: "StackOverFlow 2023 Analysis"
 author: "Hesam Korki"
+institute: "University of Luxembourg"
+format:
+  revealjs:
+    slide-level: 4
+    slide-number: true
+    logo: https://stackoverflow.design/assets/img/logos/so/logo-stackoverflow.png
+    embed-resources: true
+---
+
+
+
+## Formatting HTML
+
+title: "StackOverFlow 2023 Analysis"
+author: "Hesam Korki"
 date: "Dec. 2023"
 format:
   html:
@@ -11,10 +26,6 @@ format:
     df-print: paged
     smooth-scroll: true
     link-external-icon: true
-    embed-resources: true
----
-
-> There is a renv.lock file provided in the repo, we'd install the required packages and then laod the library
 
 ```{r}
 library("tidyverse")
@@ -23,48 +34,64 @@ library("countrycode")
 library("RColorBrewer")
 library("ggbeeswarm")
 ```
-# Loading Data
 
 ```{r}
 data <- read_csv("data/survey_results_public.csv", show_col_types = FALSE)
 eu_wage <- read_tsv("data/earn_mw_cur_tabular.tsv", show_col_types=FALSE)
 ```
 
-## Configuring Plotting
 
 ```{r}
 # defining a theme for adjusting spacings of graphs
 adjust_spacing <-
   theme(
-    plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
-    plot.margin = margin(t=20, r=50, b=20, l=20, unit = "pt")
+    # plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+    # plot.margin = margin(t=20, r=50, b=20, l=20, unit = "pt")
+    axis.text = element_text(face = "bold", size=12)
   )
 
-primary_color <- "#BDBAD7"
+primary_color <- "#F48024"
+primary_color2 <- "#BDBAD7"
 secondary_color <- "#D2EAC9"
 ```
 
+```{css, echo=FALSE}
+.panel-tabset ul {
+  border-bottom: 0px;
+}
+.panel-tabset-tabby a {
+  color: #BBC0C4;
+  font-size: 0.6em;
+  border-bottom: none !important;
+  
+}
 
-# Exploration
+.panel-tabset [role=tab][aria-selected=true] {
+  background-color: transparent;
+  border: 0px;
+}
 
-:::{.callout-note appearance="minimal"}
-There are $89,184$ rows and $84$ columns
+.panel-tabset-tabby a[aria-selected="true"],
+.panel-tabset-tabby a:hover {
+  color: #F48024;
+  border: 0px !important;
+}
 
-- Each row represents the answers of a participant
-- Each column corresponds to a question of the survey 
-:::
+h3 {
+  margin-top: 0;
+}
 
-```{r}
-glimpse(data)
+.list-desc {
+  font-size: 0.5em;
+}
 ```
 
-:::{.callout-warning appearance="minimal"}
-Most columns have values as a single string which contains semicolon separated values which is not as tidy as we would want.
-:::
 
+### Demographics: `r scales::comma(nrow(data))` Participants
 
-What interesting insights do you get by looking at this graph?
+::: {.panel-tabset}
 
+### Age
 
 ```{r}
 
@@ -81,6 +108,101 @@ level_order = c(
 data |>
   ggplot() +
   aes(y = factor(Age, levels = level_order)) +
+  geom_bar(fill = primary_color, alpha=0.8) +
+  geom_text(
+    aes(label = scales::percent(after_stat(count)/sum(count))),
+    stat = "count",
+    hjust = -0.2,
+    size = 3,
+    color = "black"
+  ) +
+  labs(x = NULL, y = NULL) +
+  theme_minimal() +
+  scale_x_continuous(labels = scales::comma, limits = c(0, 50000)) +
+  adjust_spacing 
+  
+```
+
+### Origin
+
+::: {.list-desc}
+- Top 10 countries with most participants
+:::
+
+```{r}
+
+continent_data <- data |>
+  mutate(Continent = countrycode(
+    sourcevar = Country,
+    origin = "country.name",
+    destination = "continent"
+  )) |>
+  drop_na(Continent) |>
+  group_by(Continent, Country) |>
+  summarise(freq = n()) |>
+  ungroup() |> 
+  mutate(
+    Country = case_when(
+      Country == "United States of America" ~ "USA",
+      Country == "United Kingdom of Great Britain and Northern Ireland" ~ "UK",
+      TRUE ~ Country
+    )
+  )
+
+continent_freq <- continent_data |> 
+  group_by(Continent) |> 
+  summarise(freq_c=sum(freq))
+
+custom_brewer <-  brewer.pal(11, "Set3")
+custom_brewer[c(9, 11)] <- custom_brewer[c(11, 9)]
+
+continent_data |>
+  ggplot() +
+  geom_col(mapping = aes(
+    y = Continent,
+    x = freq,
+    fill = fct_lump(Country, n = 10, w = freq)
+  ),
+  position = "dodge") +
+  geom_col(
+    data = continent_freq,
+    mapping = aes(
+      y = Continent,
+      x = freq_c),
+    alpha = 0,
+    color = primary_color
+  ) +
+  labs(x = NULL, y = NULL, fill = NULL) +
+  scale_x_continuous(labels = scales::comma) +
+  theme_minimal() +
+  scale_fill_manual(values = custom_brewer) +
+  adjust_spacing
+
+```
+### Education
+
+```{r}
+education_levels = c(
+                "Something else",
+                "Professional degree",
+                "Master’s degree",
+                "Bachelor’s degree",
+                "Associate degree",
+                "Dropped college/university",
+                "Secondary school",
+                "Primary/elementary school"
+                )
+
+data |>
+  mutate(
+    Education = case_when(
+       EdLevel == "Some college/university study without earning a degree" ~ "Dropped college/university",
+       is.na(EdLevel) ~ "Something else",
+       TRUE ~ str_replace(EdLevel, " \\(.+\\)", "")
+    )
+  ) |> 
+  ggplot() +
+  aes(y = factor(Education, levels = education_levels)) +
   geom_bar(fill = primary_color, alpha = 0.8) +
   geom_text(
     aes(label = scales::percent(after_stat(count)/sum(count))),
@@ -89,19 +211,14 @@ data |>
     size = 3,
     color = "black"
   ) +
-  labs(x = NULL, y = NULL, title = "How old are the participants?") +
-  annotate(
-    "label",
-    x = 40000, y = 1.5,
-    label = paste("Total Number of Participents:", scales::comma(nrow(data))),
-    color = "black",
-    size=3
-  ) +
+  labs(x = NULL, y = NULL) +
   theme_minimal() +
   scale_x_continuous(labels = scales::comma, limits = c(0, 50000)) +
   adjust_spacing 
-  
 ```
+
+
+### Employment Status
 
 ```{r}
 
@@ -109,7 +226,15 @@ employment_df <- data |>
   select(ResponseId, Employment, Currency, CompTotal, EdLevel, Age) |> 
   separate_rows(Employment, sep=";") |> 
   mutate(Employment=trimws(Employment)) |>
-  drop_na(Employment)
+  drop_na(Employment) |> 
+  mutate(
+    Employment = case_when(
+      Employment == "Independent contractor, freelancer, or self-employed" ~ "Self-employed",
+      Employment == "Not employed, and not looking for work" ~ "Not employed",
+      Employment == "Not employed, but looking for work" ~ "Not employed",
+      TRUE ~ Employment
+    )
+  )
 
 
 employment_df |>
@@ -123,52 +248,23 @@ employment_df |>
     size = 3,
     color = "black"
   ) +
-  labs(x = NULL, y = NULL, title = "Employment status of respondants") +
+  labs(x = NULL, y = NULL) +
   theme_minimal() +
   adjust_spacing + 
   scale_x_continuous(labels = scales::comma, limits = c(0, 70000))
 ```
-```{r}
 
-continent_data <- data |>
-  mutate(Continent = countrycode(
-    sourcevar = Country,
-    origin = "country.name",
-    destination = "continent"
-  )) |>
-  drop_na(Continent) |> 
-  group_by(Continent, Country) |> 
-  summarise(freq= n()) |> 
-  mutate(
-    Country = case_when(
-      Country == "United States of America" ~ "USA",
-      Country == "United Kingdom of Great Britain and Northern Ireland" ~ "UK",
-      TRUE ~ Country
-    )
-  )
+:::
 
-custom_brewer <-  brewer.pal(11, "Set3")
-custom_brewer[c(9,11)] <- custom_brewer[c(11,9)]
+### LOL
 
-continent_data |>
-  ggplot() +
-  aes(y = Continent,
-      x = freq,
-      fill = fct_lump(Country, n=10, w=freq)) +
-  geom_col() +
-  labs(title = "Diversity of Respondants", x = NULL, y = NULL, fill=NULL) +
-  scale_x_continuous(labels = scales::comma) +
-  theme_minimal()+ 
-  scale_fill_manual(values= custom_brewer) +
-  adjust_spacing
 
-```
 
+### Ethnics
 
 ```{r}
 continent_data |> 
   arrange(desc(freq))
-  
 ```
 
 
