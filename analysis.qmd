@@ -432,7 +432,7 @@ stat_country |>
   scale_colour_manual(
     name = 'Average Salary',
     values = c('black' = 'black', '#2E7AB7' = '#2E7AB7'),
-    labels = c('Stack Overflow', 'eurostat')
+    labels = c('eurostat','Stack Overflow')
   ) +
   labs(x = NULL, y = NULL, caption = "Fig 7: Annual gross salary by selected EU countries along with their average annual salary from eurostat") +
   theme_minimal() +
