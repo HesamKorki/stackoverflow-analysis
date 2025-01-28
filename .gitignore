@@ -1,3 +1,5 @@
+renv/
+
 .Rproj.user
 .Rhistory
 .RData
