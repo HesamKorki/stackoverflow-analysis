@@ -9,10 +9,29 @@ The **final product** is available via [this link](https://hesamkorki.github.io/
 ## Setup Options
 
 #### Option 1: Using Docker (Recommended)
-
 The easiest way to run this analysis is using Docker. This ensures you have all the required dependencies and correct environment setup.
+Prerequisites:
+- Git
+- Docker
+Install them on your machine and you will be fine reproducing this project.
 
-If you're using macOS or a common Linux distribution, the only thing you need to do is to run the `setup.sh` script:
+The Docker image is built for both ARM and AMD so you should be fine with apple processors as well as others. This is viable thanks to the Github Action CI/CD on this repository which builds the image and pushes it to the dockerhub container registry.
+
+1. Pull the image
+   ```bash
+   docker pull hesamkorki/stackoverflow-analysis
+   ```
+2. Run the docker container
+   ```bash
+   docker run -p 8025:8025 hesamkorki/stackoverflow-analysis
+   ```
+Then the you'd have the result of the analysis served on your local machine: `http://localhost:8025`
+
+
+
+#### Option 2: Using local R environment
+
+If you're using macOS or a common Linux distribution, and you have R development environment on your machine, the only thing you need to do is to run the `setup.sh` script:
 
 ```bash
 ./setup.sh
