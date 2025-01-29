@@ -24,23 +24,12 @@ RUN apt-get update && apt-get install -y \
     wget \
     && apt-get clean
 
-# Install Quarto
-# Detect the architecture and download the correct Quarto package
-RUN ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" = "amd64" ]; then \
-        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-amd64.deb"; \
-    elif [ "$ARCH" = "arm64" ]; then \
-        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-arm64.deb"; \
-    else \
-        echo "Unsupported architecture: $ARCH"; exit 1; \
-    fi && \
-    wget "$QUARTO_URL" -O quarto.deb && \
-    apt-get install -y ./quarto.deb && \
-    rm quarto.deb
 
 
 # Install R packages
 RUN Rscript -e "install.packages(c('tidyverse', 'quarto', 'eurostat', 'countrycode', 'RColorBrewer', 'ggbeeswarm', 'knitr', 'rmarkdown'))"
+# COPY renv.lock ./
+# RUN Rscript -e "renv::restore()"
 
 # Set work directory
 WORKDIR /app
@@ -56,9 +45,23 @@ RUN rm stack-overflow-developer-survey-2023.zip
 RUN curl -g -o data/estat_earn_ses_annual_filtered_en.csv "https://ec.europa.eu/eurostat/api/dissemination/sdmx/3.0/data/dataflow/ESTAT/earn_ses_annual/1.0/A.B-S_X_O.TOTAL.FT.TOTAL.T.MEAN_E_EUR.*?c[geo]=BE,BG,CZ,DK,DE,EE,IE,EL,ES,FR,HR,IT,CY,LV,LT,LU,HU,MT,NL,AT,PL,PT,RO,SI,SK,FI,SE,IS,NO,CH,UK,ME,MK,AL,RS,TR&compress=false&format=csvdata&formatVersion=2.0&c[TIME_PERIOD]=ge:2018+le:2018&lang=en&labels=name"
 
 
+# Install Quarto
+# Detect the architecture and download the correct Quarto package
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-amd64.deb"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-arm64.deb"; \
+    else \
+        echo "Unsupported architecture: $ARCH"; exit 1; \
+    fi && \
+    wget "$QUARTO_URL" -O quarto.deb && \
+    apt-get install -y ./quarto.deb && \
+    rm quarto.deb
+
 # Render Quarto file
-RUN quarto render analysis.qmd -o index.html && \
-    mv index.html docs/
+RUN Rscript -e "quarto::quarto_render('analysis.qmd', output_file = 'index.html')" && \
+mv index.html docs/
 
 # Serve the output
 RUN apt-get install -y python3 
