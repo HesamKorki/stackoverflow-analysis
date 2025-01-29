@@ -40,9 +40,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
 
 
 # Install R packages
-RUN Rscript -e "install.packages(c('tidyverse', 'quarto', 'eurostat', 'countrycode', 'RColorBrewer', 'ggbeeswarm', 'knitr'))"
-# COPY renv.lock ./
-# RUN Rscript -e "renv::restore()"
+RUN Rscript -e "install.packages(c('tidyverse', 'quarto', 'eurostat', 'countrycode', 'RColorBrewer', 'ggbeeswarm', 'knitr', 'rmarkdown'))"
 
 # Set work directory
 WORKDIR /app
