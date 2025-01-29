@@ -25,9 +25,19 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 # Install Quarto
-RUN wget https://quarto.org/download/latest/quarto-linux-amd64.deb && \
-    apt-get install -y ./quarto-linux-amd64.deb && \
-    rm ./quarto-linux-amd64.deb
+# Detect the architecture and download the correct Quarto package
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-amd64.deb"; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-arm64.deb"; \
+    else \
+        echo "Unsupported architecture: $ARCH"; exit 1; \
+    fi && \
+    wget "$QUARTO_URL" -O quarto.deb && \
+    apt-get install -y ./quarto.deb && \
+    rm quarto.deb
+
 
 # Install R packages
 RUN Rscript -e "install.packages(c('tidyverse', 'quarto', 'eurostat', 'countrycode', 'RColorBrewer', 'ggbeeswarm', 'knitr'))"
