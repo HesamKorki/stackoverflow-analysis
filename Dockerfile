@@ -1,13 +1,16 @@
-# Base R image
 FROM rocker/r-ver:4.3.1
 
-# Install system dependencies
+# 1. Configure RSPM for binary packages --------------------------------------
+RUN echo "options(repos = c(CRAN = 'https://packagemanager.posit.co/cran/__linux__/jammy/latest'))" \
+    >> /usr/local/lib/R/etc/Rprofile.site
+
+# 2. Install system dependencies ---------------------------------------------
 RUN apt-get update && apt-get install -y \
     libglpk-dev \
     libxml2-dev \
     libcairo2-dev \
     libgit2-dev \
-    default-libmysqlclient-dev \
+    libmysqlclient-dev \
     libpq-dev \
     libsasl2-dev \
     libsqlite3-dev \
@@ -22,15 +25,19 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     unixodbc-dev \
     wget \
+    littler \
     && apt-get clean
 
-
-
-# Install R packages
-RUN Rscript -e "install.packages(c('tidyverse', 'quarto', 'eurostat', 'countrycode', 'RColorBrewer', 'ggbeeswarm', 'knitr', 'rmarkdown'))"
-# COPY renv.lock ./
-# RUN Rscript -e "renv::restore()"
-
+# 3. Install R packages using binaries ---------------------------------------
+RUN install2.r --error --skipinstalled --ncpus $(nproc) \
+    tidyverse \
+    quarto \
+    eurostat \
+    countrycode \
+    RColorBrewer \
+    ggbeeswarm \
+    knitr \
+    rmarkdown
 # Set work directory
 WORKDIR /app
 
@@ -46,18 +53,23 @@ RUN curl -g -o data/estat_earn_ses_annual_filtered_en.csv "https://ec.europa.eu/
 
 
 # Install Quarto
-# Detect the architecture and download the correct Quarto package
-RUN ARCH=$(dpkg --print-architecture) && \
-    if [ "$ARCH" = "amd64" ]; then \
-        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-amd64.deb"; \
-    elif [ "$ARCH" = "arm64" ]; then \
-        QUARTO_URL="https://quarto.org/download/latest/quarto-linux-arm64.deb"; \
+RUN QUARTO_VERSION="1.3.450" && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        QUARTO_URL="https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-amd64.tar.gz"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        QUARTO_URL="https://github.com/quarto-dev/quarto-cli/releases/download/v${QUARTO_VERSION}/quarto-${QUARTO_VERSION}-linux-arm64.tar.gz"; \
     else \
         echo "Unsupported architecture: $ARCH"; exit 1; \
     fi && \
-    wget "$QUARTO_URL" -O quarto.deb && \
-    apt-get install -y ./quarto.deb && \
-    rm quarto.deb
+    wget "$QUARTO_URL" -O quarto.tar.gz && \
+    mkdir -p /opt/quarto && \
+    tar -zxvf quarto.tar.gz -C /opt/quarto --strip-components=1 && \
+    rm quarto.tar.gz && \
+    ln -s /opt/quarto/bin/quarto /usr/local/bin/quarto
+
+# Verify installation
+RUN quarto --version
 
 # Render Quarto file
 RUN Rscript -e "quarto::quarto_render('analysis.qmd', output_file = 'index.html')" && \
