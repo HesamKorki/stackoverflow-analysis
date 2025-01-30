@@ -6,7 +6,7 @@ sapply(required_packages, function(pkg) {
 
 # Verify data files exist
 data_files <- c(
-  "/app/data/stack-overflow-developer-survey-2023.zip",
+  "/app/data/survey_results_public.csv",
   "/app/data/estat_earn_ses_annual_filtered_en.csv"
 )
 if (!all(file.exists(data_files))) {
