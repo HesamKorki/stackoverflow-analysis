@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Build, Test and Publish Docker Image
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: hesamkorki/stackoverflow-analysis
 
 jobs:
   build:
