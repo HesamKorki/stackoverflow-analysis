@@ -34,6 +34,11 @@ The Docker image is built for both ARM and AMD so you should be fine with apple 
 Then the you'd have the result of the analysis served on your local machine: `http://localhost:8025`
 
 
+### Testing
+
+There are two different tests in the CI/CD. 
+1. Tests the R env and the dependencies
+2. Tests the integrity of the expected format of the output
 
 #### Option 2: Using local R environment
 

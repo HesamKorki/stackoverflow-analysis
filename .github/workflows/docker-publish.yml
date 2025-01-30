@@ -55,3 +55,14 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max 
+        
+      - name: Test R environment
+        run: |
+          # Copy test file into container and execute
+          docker run --rm -v ./test.R:/app/test.R ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            Rscript test.R
+          
+      - name: Test rendered output
+        run: |
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+            sh -c "test -f docs/index.html && quarto --version"
