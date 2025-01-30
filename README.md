@@ -18,10 +18,16 @@ Install them on your machine and you will be fine reproducing this project.
 The Docker image is built for both ARM and AMD so you should be fine with apple processors as well as others. This is viable thanks to the Github Action CI/CD on this repository which builds the image and pushes it to the dockerhub container registry.
 
 1. Pull the image
+   (AMD CPUs)
    ```bash
-   docker pull hesamkorki/stackoverflow-analysis
+   docker pull hesamkorki/stackoverflow-analysis:main
    ```
-2. Run the docker container
+   (ARM CPUs)
+   ```bash
+   docker pull hesamkorki/stackoverflow-analysis:arm
+   ```
+   
+3. Run the docker container
    ```bash
    docker run -p 8025:8025 hesamkorki/stackoverflow-analysis
    ```
