@@ -59,10 +59,10 @@ jobs:
       - name: Test R environment
         run: |
           # Copy test file into container and execute
-          docker run --rm -v ./test.R:/app/test.R ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+          docker run --rm -v ./test.R:/app/test.R ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main \
             Rscript test.R
           
       - name: Test rendered output
         run: |
-          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} \
+          docker run --rm ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main \
             sh -c "test -f docs/index.html && quarto --version"

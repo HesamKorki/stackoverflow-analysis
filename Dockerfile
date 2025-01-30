@@ -82,5 +82,4 @@ ENV PYTHONUNBUFFERED=1
 # Expose the port and start the server
 EXPOSE 8025 
 
-ENTRYPOINT ["python3", "-m", "http.server", "--directory", "docs"]
-CMD ["8025", "--bind", "0.0.0.0"]
+CMD ["python3", "-m", "http.server", "--directory", "docs", "8025", "--bind", "0.0.0.0"]
